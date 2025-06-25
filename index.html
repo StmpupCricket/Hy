@@ -4,8 +4,9 @@
   <meta charset="UTF-8" />
   <title>Sony TEN 1 HD - Master Playlist</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.0/dist/hls.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dplayer@1.26.0/dist/DPlayer.min.js"></script>
+  <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
   <style>
     html, body {
       margin: 0;
@@ -15,49 +16,51 @@
       width: 100%;
       overflow: hidden;
     }
-    #dplayer {
+    #player {
+      width: 100%;
+      height: 100%;
+    }
+    video {
       width: 100%;
       height: 100%;
     }
   </style>
 </head>
 <body>
-  <div id="dplayer"></div>
+  <video id="player" playsinline controls></video>
 
   <script>
-    const dp = new DPlayer({
-      container: document.getElementById('dplayer'),
+    const video = document.getElementById('player');
+    if (Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource('https://tataplay.slivcdn.com/hls/live/2011747/TEN1HD/master_3500.m3u8');
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, function () {
+        video.play().catch(() => {
+          // Fallback autoplay with muted
+          video.muted = true;
+          video.play().then(() => {
+            video.muted = false;
+          }).catch(() => {});
+        });
+      });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = 'https://tataplay.slivcdn.com/hls/live/2011747/TEN1HD/master_3500.m3u8';
+      video.addEventListener('loadedmetadata', function () {
+        video.play();
+      });
+    }
+
+    const player = new Plyr('#player', {
       autoplay: true,
       volume: 0.8,
-      video: {
-        url: 'https://tataplay.slivcdn.com/hls/live/2011747/TEN1HD/master_3500.m3u8',
-        type: 'hls'
-      }
     });
-
-    // Force autoplay with sound (with fallback)
-    const tryAutoPlay = async () => {
-      const video = dp.video;
-      try {
-        video.muted = false;
-        video.volume = 0.8;
-        await video.play();
-      } catch {
-        try {
-          video.muted = true;
-          await video.play();
-          video.muted = false;
-        } catch {}
-      }
-    };
-
-    tryAutoPlay();
 
     ['click', 'touchstart', 'keydown'].forEach(evt =>
       document.addEventListener(evt, () => {
-        if (dp.video.muted) {
-          dp.video.muted = false;
-          dp.video.volume = 0.8;
+        if (video.muted) {
+          video.muted = false;
+          video.volume = 0.8;
         }
       }, { once: true })
     );
